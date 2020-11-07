@@ -1,4 +1,3 @@
-﻿using System;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -110,7 +109,10 @@ namespace PlasmaRifle
                 LiveMixin liveMixin = collider.gameObject.GetComponent<LiveMixin>();
                 if(liveMixin != null && liveMixin.IsAlive())
                 {
-                    liveMixin.TakeDamage(this.damage, default, DamageType.Fire);
+                    if(liveMixin.IsAlive())
+                    {
+                        liveMixin.TakeDamage(this.damage, default, DamageType.Undefined);
+                    }
                 }
             }
         }
@@ -126,7 +128,11 @@ namespace PlasmaRifle
             {
                 return;
             }
-            this.tempEnergy = Math.Min(0.0f, (this.Consumption * Time.deltaTime));
+            this.tempEnergy -= this.Consumption * Time.deltaTime;
+            if(this.tempEnergy <= 0.0f)
+            {
+                this.tempEnergy = 0.0f;
+            }
             float maxDistance = this.currentSpeed * Time.deltaTime;
             this.path += maxDistance;
             if(!this.visible && this.path >= this.VisibilityDistance)
