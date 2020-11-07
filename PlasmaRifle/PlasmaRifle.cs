@@ -402,11 +402,8 @@ namespace PlasmaRifle
             {
                 this.condition = Math.Max(0, (this.condition - ConditionHandler.ConditionDegradeAmount));
 
-                Vector3 forward = MainCamera.camera.transform.forward;
-                Vector3 right = MainCamera.camera.transform.right;
-
                 battery.Drop();
-                battery.GetComponent<Rigidbody>().AddForce(right * 5f, ForceMode.VelocityChange);
+                battery.GetComponent<Rigidbody>().AddForce(MainCamera.camera.transform.right * 5f, ForceMode.VelocityChange);
 
             }
         }
@@ -468,7 +465,7 @@ namespace PlasmaRifle
 
         public void OnProtoSerialize(ProtobufSerializer serializer)
         {
-            string fileName = getFileName();
+            string fileName = GetFileName();
             SaveData saveData = new SaveData(this.condition, (this.chargeAmount >= BaseEnergyCost), this.isCleaning);
 
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(SaveData));
@@ -484,7 +481,7 @@ namespace PlasmaRifle
 
         public void OnProtoDeserialize(ProtobufSerializer serializer)
         {
-            string fileText = File.ReadAllText(getFileName());
+            string fileText = File.ReadAllText(GetFileName());
 
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(SaveData));
             using(StringReader stringReader = new StringReader(fileText))
