@@ -11,7 +11,7 @@ namespace PlasmaRifle
         private readonly float Consumption = 0.35f;
         private readonly float VisibilityDistance = 0.5f;
 
-        private LayerMask layerMask;
+        public LayerMask layerMask;
 
         [AssertNotNull]
         public VFXController fxControl;
@@ -25,7 +25,7 @@ namespace PlasmaRifle
 
         public float currentSpeed => this.tempSpeed * this.tempEnergy;
 
-        private ParticleSystemSwapper[] swapperArray = new ParticleSystemSwapper[11];
+        private static ParticleSystemSwapper[] swapperArray = new ParticleSystemSwapper[11];
 
         public void SetValuesFromOriginal(StasisSphere sSphere)
         {
@@ -156,7 +156,7 @@ namespace PlasmaRifle
             {
                 return;
             }
-            this.OnEnergyDepelted();
+            this.OnEnergyDepleted();
             this.Deactivate();
         }
 
