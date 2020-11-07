@@ -6,9 +6,9 @@ namespace PlasmaRifle
     [HarmonyPatch(typeof(Inventory), "Pickup")]
     class Equipment_GetFreeSlot_Patch
     {
-        private static bool Prefix(ItemsContainer ___container, Equipment ___equipment, ref bool __result, Pickupable pickupable, bool noMessage = false)
+        private static bool Prefix(ItemsContainer ____container, Equipment ____equipment, ref bool __result, Pickupable pickupable, bool noMessage = false)
         {
-            if(!___container.HasRoomFor(pickupable))
+            if(!____container.HasRoomFor(pickupable))
             {
                 __result = false;
             }
@@ -19,11 +19,11 @@ namespace PlasmaRifle
 
             if(TechType.Battery == techType || TechType.PrecursorIonBattery == techType)
             {
-                ___container.UnsafeAdd(inventoryItem);
+                ____container.UnsafeAdd(inventoryItem);
             }
-            else if(!((IItemsContainer)___equipment).AddItem(inventoryItem))
+            else if(!((IItemsContainer)____equipment).AddItem(inventoryItem))
             {
-                ___container.UnsafeAdd(inventoryItem);
+                ____container.UnsafeAdd(inventoryItem);
             }
             if(!noMessage)
             {
