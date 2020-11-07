@@ -150,13 +150,6 @@ namespace PlasmaRifle
 
         public override bool OnRightHandDown()
         {
-            if (this.isCleaning)
-            {
-                ErrorMessage.AddError("Plasma Rifle cleaning interrupted");
-                CancelInvoke(CleanMethod);
-                isCleaning = false;
-            }
-
             if (!this.isCharging && this.chargeAmount == this.energyCost)
             {
                 this.Fire();
@@ -279,6 +272,13 @@ namespace PlasmaRifle
             }
             else
             {
+                if (this.isCleaning)
+                {
+                    ErrorMessage.AddError("Plasma Rifle cleaning interrupted");
+                    CancelInvoke(CleanMethod);
+                    isCleaning = false;
+                }
+            
                 TechType batteryType = energyMixin.GetBattery().GetComponent<TechTag>().type;
                 if (TechType.Battery == batteryType)
                 {
