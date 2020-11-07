@@ -117,7 +117,7 @@ namespace PlasmaRifle
             }
         }
 
-        protected void OnEnergyDepelted()
+        protected void OnEnergyDepleted()
         {
             this.fxControl.StopAndDestroy(0, 1f);
         }
