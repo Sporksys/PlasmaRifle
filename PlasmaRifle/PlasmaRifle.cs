@@ -15,7 +15,7 @@ namespace PlasmaRifle
 
         private static readonly float BaseEnergyCost = 5f;
         private static readonly float IonEnergyCost = 25f;
-        private static readonly float ChargeToPlasmasRate = 20f;
+        private static readonly float ChargeToPlasmaRate = 20f;
         private static readonly float DamagePerPlasma = 4f;
 
         private static readonly string CleanMethod = "DoClean";
@@ -111,14 +111,14 @@ namespace PlasmaRifle
                 swapperArray[2] = new ParticleSystemSwapper(particleSystem.transform.GetChild(1).gameObject.GetComponent<ParticleSystem>(), Color.magenta);
                 swapperArray[3] = new ParticleSystemSwapper(particleSystem.transform.GetChild(2).gameObject.GetComponent<ParticleSystem>(), Color.magenta);
                 swapperArray[4] = new ParticleSystemSwapper(particleSystem.transform.GetChild(3).gameObject.GetComponent<ParticleSystem>(), Color.magenta);
-
-                if (this.sphere == null && this.effectSpherePrefab != null)
-                {
-                    this.sphere = Object.Instantiate<GameObject>(this.effectSpherePrefab, this.tr.position, Quaternion.identity).GetComponent<PlasmaSphere>();
-                }
-
-                this.UpdateBar();
             }
+            
+            if (this.sphere == null && this.effectSpherePrefab != null)
+            {
+                this.sphere = Object.Instantiate<GameObject>(this.effectSpherePrefab, this.tr.position, Quaternion.identity).GetComponent<PlasmaSphere>();
+            }
+
+            this.UpdateBar();
         }
 
         public override void OnDraw(Player p)
@@ -199,7 +199,7 @@ namespace PlasmaRifle
             return base.OnAltUp();
         }
 
-        private void LastUpdate()
+        private void LateUpdate()
         {
             if (this.energyMixin.HasItem())
             {
@@ -375,7 +375,7 @@ namespace PlasmaRifle
             this.fxControl.Play(1);
             FMODUWE.PlayOneShot(this.fireSound, this.tr.position, 1f);
 
-            float maxPlasma = this.chargeAmount * ChargeToPlasmasRate;
+            float maxPlasma = this.chargeAmount * ChargeToPlasmaRate;
             float deliverablePlasma = Math.Min(this.energyMixin.charge, maxPlasma);
             float plasmaDamage = deliverablePlasma * DamagePerPlasma;
 
@@ -422,7 +422,7 @@ namespace PlasmaRifle
 
         private void Animate(bool state)
         {
-            if(this.animator == null || this.animator.isActiveAndEnabled)
+            if(this.animator == null || !this.animator.isActiveAndEnabled)
             {
                 return;
             }
