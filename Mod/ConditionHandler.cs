@@ -12,7 +12,11 @@ namespace PlasmaRifle
 
         private static readonly ConditionTier[] conditionTiers = new ConditionTier[]
         {
-            new ConditionTier(100, 76, 0, "#BFFF00FF")
+            new ConditionTier(100, 76, 0, "#BFFF00FF"),
+            new ConditionTier(75, 51, 5, "#FFFF00FF"),
+            new ConditionTier(50, 26, 10, "#FFBF00FF"),
+            new ConditionTier(25, 1, 25, "#FF8000FF"),
+            new ConditionTier(0, 0, 50, "#FF4000FF")
         };
 
         public class ConditionTier
