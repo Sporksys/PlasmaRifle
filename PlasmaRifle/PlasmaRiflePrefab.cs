@@ -51,19 +51,6 @@ namespace PlasmaRifle
             return this.techData;
         }
 
-        public override PDAEncyclopedia.EntryData EncyclopediaEntryData => GetEntryData();
-
-        private PDAEncyclopedia.EntryData GetEntryData()
-        {
-            if(this.entryData == null)
-            {
-                entryData = new PDAEncyclopedia.EntryData();
-                entryData.key = this.ClassID;
-                entryData.nodes = new string[] { "Tech", "Equipment" };
-            }
-            return this.entryData;
-        }
-
         protected override Atlas.Sprite GetItemSprite()
         {
             if(this.itemSprite == null)
