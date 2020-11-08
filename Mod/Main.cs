@@ -40,11 +40,6 @@ namespace PlasmaRifle
                 Inventory.main.equipment.AddSlot(Main.SlotNameArray[2]);
                 Inventory.main.equipment.AddSlot(Main.SlotNameArray[3]);
                 Inventory.main.equipment.AddSlot(Main.SlotNameArray[4]);
-
-                if(verbose)
-                {
-                    PDAEncyclopedia.Add("PlasmaRifle", true);
-                }
             }
         }
     }
