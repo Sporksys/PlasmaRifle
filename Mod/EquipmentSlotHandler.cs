@@ -23,6 +23,5 @@ namespace PlasmaRifle
 
             return null;
         }
-
     }
 }
