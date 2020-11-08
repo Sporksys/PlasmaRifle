@@ -172,6 +172,5 @@ namespace PlasmaRifle
             this.tempSpeed = 0.0f;
             this.path = 0.0f;
         }
-
     }
 }
