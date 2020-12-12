@@ -1,5 +1,6 @@
 ﻿using SMLHelper.V2.Utility;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
 using UnityEngine;
@@ -13,10 +14,17 @@ namespace PlasmaRifle
 
         public override string animToolName => TechType.StasisRifle.AsString(true);
 
-        private static readonly float BaseEnergyCost = 5f;
-        private static readonly float IonEnergyCost = 25f;
-        private static readonly float ChargeToPlasmaRate = 20f;
-        private static readonly float DamagePerPlasma = 4f;
+        private static readonly string CleanMethod = "DoClean";
+        private static readonly string TargetingMethod = "DoTargeting";
+        private static readonly float FireRate = 1f;
+        
+        public static readonly string m_CleaningStart = "Librication applied, cleaning rifle";
+        public static readonly string m_CleaningiEnd = "Plasma Rifle cleaning complete";
+        public static readonly string m_CleaningInterrupted = "Plasma Rifle cleaning interrupted";
+        public static readonly string m_OutOfCharges = "Out of charges";
+        public static readonly string t_OpenCartridges = "Cartridges(<color=#ADF8FFFF>{0}</color>)";
+        public static readonly string t_Unjam = "Clear Jam (<color=#ADF8FFFF>{0}</color>)";
+        public static readonly string t_nexTarget = "Next Target (<color=#ADF8FFFF>{0}</color>)";
 
         private static readonly string CleanMethod = "DoClean";
 
@@ -25,38 +33,55 @@ namespace PlasmaRifle
         [AssertNotNull]
         public FMOD_StudioEventEmitter chargeBegin;
         [AssertNotNull]
-        public FMOD_StudioEventEmitter chargeLoop;
-        [AssertNotNull]
         public FMODAsset fireSound;
         [AssertNotNull]
         public VFXController fxControl;
-
-        private enum PlasmaRifleState
-        {
-            Empty,
-            Chambered,
-            Charged
-        }
+        
+        private CartridgeContaineir cartridges;
 
         public Animator animator;
         public Transform muzzle;
         public Renderer bar;
-        private Transform tr;
-        private float chargeAmount;
-        private bool isCharging;
         private PlasmaSphere sphere;
 
-        private float energyCost = BaseEnergyCost;
-        private float chargeDuration = 3f;
-        private string quickReloadText;
-        private string dischargeText;
-        private PlasmaRifleState currentState;
+        private float energyCost = 5f;
+        private string altUseText;
+        private string altUseTextJammed;
+        private string altUseTextTargeting;
         private bool isCleaning = false;
-        public int condition = ConditionHandler.MaxCondition;
-
-        private ParticleSystemSwapper[] swapperArray = new ParticleSystemSwapper[5];
-
-        private float chargeNormalized => this.chargeAmount / this.energyCost;
+        private bool isUnjamming = false;
+        private bool isTargeting = false;
+        public int maxCondition;
+        public int currentCondition;
+        public float projectileSpeed;
+        public float damage;
+        public int ammoWidth;
+        public int ammoHeight;
+        public bool canTarget;
+        private float lastFiredTime;
+        
+        public FMODAsset ejectSound;
+        public FMOD_CustomLoopingEmitter unjamSound;
+        public VFXController unjamFx;
+        public FMOD_CustomLoopingEmitter targetingSound;
+        public FMOD_CustomEmitter sonarSound;
+        
+        private float rotateSpeed = 0.0f
+        private int rpmIndex;
+        
+        private readonly TargetingController targetController = new TargetingController();
+        private readonly ParticleSystemSwapper[] swapperArray = new ParticleSystemSwapper[5];
+       
+        public void SetInitValues(int maxCondition, int projectileSpeed, int damage, int ammoWidth, int ammoHeight, bool canTarget)
+        {
+            this.maxCondition = maxCondition;
+            this.currentCondition = maxCondition;
+            this.projectileSpeed = projectileSpeed;
+            this.damage = damage;
+            this.ammoWidth = ammoWidth;
+            this.ammoHeight = ammoHeight;
+            this.canTarget = canTarget;
+        }
 
         public void SetValuesFromOriginal(StasisRifle sRifle)
         {
@@ -65,8 +90,6 @@ namespace PlasmaRifle
                 this.animator = sRifle.animator;
                 this.muzzle = sRifle.muzzle;
                 this.chargeBegin = sRifle.chargeBegin;
-                this.chargeLoop = sRifle.chargeLoop;
-                this.fireSound = sRifle.fireSound;
                 this.bar = sRifle.bar;
                 this.mainCollider = sRifle.mainCollider;
                 this.drawSound = sRifle.drawSound;
@@ -94,14 +117,29 @@ namespace PlasmaRifle
         public override void Awake()
         {
             base.Awake();
-
-            this.tr = this.GetComponent<Transform>();
-
-            string binding = GameInput.GetBindingName(GameInput.Button.AltTool, GameInput.BindingSet.Primary);
-            this.quickReloadText = "Quick Reload (<color=#ADF8FFFF>" + binding + "</color>)";
-            this.dischargeText = "Discharge (<color=#ADF8FFFF>" + binding + "</color>)";
-
+            
+            string altUseBinding = GameInput.GetBindingName(GameInput.Button.AltTool, GameInput.BindingSet.Primary);
+            
+            this.altUseText = String.Format(t_OpenCartridges, altUseBinding);
+            this.altUseTextJammed = String.Format(t_Unjam, altUseBinding);
+            this.altUseTextTargeting = String.Format(t_nextTarget, altUseBinding);
             this.energyMixin.compatibleBatteries.Add(TechType.Lubricant);
+            
+            this.InitCartridgeContainer();
+            
+            this.fireSound = CraftData.GetPrefabForTechType(TechType.RepulsionCannon).GetComponent<RepulsionCannon>().shootSound;
+            this.ejectSound = CraftData.GetPrefabForTechType(TechType.PropulsionCannon).GetComponent<PropulsionCannon>().shootSound;
+            this.sonarSound = CraftData.GetPrefabForTechType(TechType.Seamoth).GetComponent<Seamoth>().sonarSound;
+            
+            EngineRpmSFXManager engineSFXManager = CraftData.GetPrefabForTechType(TechType.Seaglide).GetComponent<Seaglide>().engineRPMManager;
+            if(engineSFXManager != null)
+            {
+                this.targetingSound = engineSFXManager.engineRpmSFX;
+                this.rpmIndex = this.targetingSound.GetParameterIndex("rpm");
+            }
+            
+            FireExtinguisher prefab = CraftData.GetPrefabForTechType(TechType.FireExtinguisher).GetComponent<FireExtinguisher>();
+            this.unjamSound = prefab.soundEmitter;
 
             if (this.fxControl != null)
             {
@@ -116,79 +154,155 @@ namespace PlasmaRifle
             if (this.sphere == null && this.effectSpherePrefab != null)
             {
                 this.sphere = Object.Instantiate<GameObject>(this.effectSpherePrefab, this.tr.position, Quaternion.identity).GetComponent<PlasmaSphere>();
+                if(this.canTarget)
+                {
+                    this.sphere.EnemyKilledEvent += OnEnemyKilled;
+                }
             }
 
             this.UpdateBar();
+        }
+        
+        public void OnEnemyKilled()
+        {
+            this.targetControlled.CheckForDeadTargets();
+        }
+
+        private void OnAddItem(InventoryItem item) => UpdateBar();
+        
+        private void OnRemoveItem(InventoryItem item) => UpdateBar();
+        
+        private void InitCartridgeContainer()
+        {
+            if(this.cartridges == null)
+            {
+                this.cartridges = new CartridgeContainer(this.ammoWidth, this.ammoHeight, this.transform, "Cartridges", null);
+                this.cartridges.onAddItem += OnAddItem;
+                this.cartridges.onRemoveItem += OnRemoveItem;
+            }
+        }
+        
+        private void UpdateBar()
+        {
+            this.bar.materials[1].SetFloat(ShaderPropertyID._Amount, this.cartridges.GetTotalChargePercent());
         }
 
         public override void OnDraw(Player p)
         {
             base.OnDraw(p);
+            SafeAnimator.SetBool(Utils.GetLocalPlayerComp().armsController.gameObject.GetComponent<Animator>(), "charged_stasisrifle", false);
 
-            this.sphere.SetParticleColors();
+            /*this.sphere.SetParticleColors();
             foreach (ParticleSystemSwapper swapper in swapperArray) {
                 if (swapper != null)
                 {
                     swapper.SetModColor();
                 }
-            }
+            }*/
         }
-
+        
         public override void OnHolster()
         {
             base.OnHolster();
-
-            this.sphere.ResetParticleColors();
+            this.StopTargeting();
+            
+            /*this.sphere.ResetParticleColors();
             foreach (ParticleSystemSwapper swapper in swapperArray)
             {
                 if (swapper != null)
                 {
                     swapper.SetOriginalColor();
                 }
+            }*/
+        }
+
+        public void Update()
+        {
+            if(this.isTargeting)
+            {
+                this.rotateSpeed += 0.005f;
+                if(this.rotateSpeed >= 0.85f)
+                {
+                    this.rotateSpeed = 0.85f;
+                }
+                this.targetingSound.SetParameterValue(this.rpmIndex, this.rotateSpeed);
+                this.targetingSound.Play();
             }
+            else
+            {
+                this.StopTargeting();
+            }
+        }
+        
+        private void StopTargeting()
+        {
+            this.isTargeting = false;
+            this.rotateSpeed = 0.0f;
+            this.targetingSound.Stop();
+        }
+        
+        public override bool OnLeftHandUp()
+        {
+            if(this.canTarget)
+            {                
+                if(!this.isTargeting)
+                {
+                    if(this.energyMixin.charge <= 5f)
+                    {
+                        ErrorMessage.AddError(Language.main.Get("BatteryDepleted"));
+                        return base.OnLeftHandUp();
+                    }
+                    
+                    this.isTargeting = true;
+                    this.Animate(true);
+                    
+                    this.sonarSound.Stop();
+                    this.sonarSound.transform.position = this.transform.position;
+                    
+                    this.sonarSound.Play();
+                    SNCameraRoot.main.SonarPing();
+                    Invoke(TargetingMethod), 2f);
+                    
+                    this.energyMixin.ConsumeEnergy(this.energyCost);
+                }
+                else
+                {
+                    this.isTargeting = false;
+                    this.Animate(false);
+                    this.targetingSOund.SetParameterValue(this.rpmIndex, 0.0f);
+                    this.targetingController.ReleaseTargets();
+                }
+            }
+            
+            return base.OnLeftHandUp();
+        }
+        
+        private void DoTargeting()
+        {
+            this.targetController.AcquireTargets();
         }
 
         public override bool OnRightHandDown()
         {
-            if (!this.isCharging && this.chargeAmount == this.energyCost)
-            {
-                this.Fire();
-            }
-            else
-            {
-                this.BeginCharge();
-                this.Charge();
-            }
+            this.Fire();
             return this.isCharging;
-        }
-
-        public override bool OnRightHandHeld()
-        {
-            this.Charge();
-            return base.OnRightHandHeld();
-        }
-
-        public override bool OnRightHandUp()
-        {
-            this.AbandonCharge();
-            return base.OnRightHandUp();
         }
 
         public override bool OnAltUp()
         {
-            if (this.currentState == PlasmaRifleState.Empty)
+            if(this.cartridges.isJammed && this.cartridges.count == 0)
             {
-                if (!this.QuickReload())
-                {
-                    ErrorMessage.AddError("No batteries to chamber");
-                }
+                this.StartUnjam();
             }
-            else if (this.currentState == PlasmaRifleState.Charged)
+            else if(this.isTargeting)
             {
-                this.chargeAmount = 0.0f;
-                this.UpdateBar();
+                this.targetController.CycleNextTarget();
             }
-
+            else
+            {
+                this.cartridges.Open();
+            }
+            
             return base.OnAltUp();
         }
 
