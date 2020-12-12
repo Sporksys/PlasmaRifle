@@ -6,7 +6,6 @@ namespace PlasmaRifle
     class PlasmaSphere : MonoBehaviour
     {
         private readonly float ShellRadius = 0.5f;
-        private readonly float Speed = 100f;
         private readonly float Energy = 1f;
         private readonly float Consumption = 0.35f;
         private readonly float VisibilityDistance = 0.5f;
@@ -22,6 +21,11 @@ namespace PlasmaRifle
         private bool visible;
         private float damage;
         private float path;
+
+        public float homingAcquity = 5f;
+        private GameObject homingTarget = null;
+        
+        public event EnemyKilledDelegate EnemyKilledEvent;
 
         public float currentSpeed => this.tempSpeed * this.tempEnergy;
 
@@ -78,8 +82,9 @@ namespace PlasmaRifle
             }
         }
 
-        public void ShootPlasma(Vector3 position, Quaternion rotation, float damage)
+        public void ShootPlasma(Vector3 position, Quaternion rotation, float speed, float damage, GameObject homingTarget)
         {
+            this.homingTarget = homingTarget;
             this.damage = damage;
             this.transform.position = position;
             this.transform.rotation = rotation;
@@ -97,7 +102,7 @@ namespace PlasmaRifle
         {
             if(this.visible)
             {
-                this.fxControl.StopAndDestroy(0, 1f);
+                StopAndDestroy();
             }
 
             this.fxControl.Play(1);
@@ -112,12 +117,22 @@ namespace PlasmaRifle
                     if(liveMixin.IsAlive())
                     {
                         liveMixin.TakeDamage(this.damage, default, DamageType.Undefined);
+                        
+                        if(!lifeMixin.IsAlive())
+                        {
+                            OnEnemyKilled();
+                        }
                     }
                 }
             }
         }
+        
+        protected virtual void OnEnemyKilled()
+        {
+            EnemyKilledEvent?.Invoke();
+        }
 
-        protected void OnEnergyDepleted()
+        public void StopAndDestroy()
         {
             this.fxControl.StopAndDestroy(0, 1f);
         }
@@ -152,11 +167,15 @@ namespace PlasmaRifle
                 this.Deactivate();
             }
             this.transform.position += this.transform.forward * maxDistance;
+            if(this.homingTarget != null)
+            {
+                this.transform.rotation = Quarternion.Slerp(this.transform.rotation, Quarternion.LookRotation((this.homingTarget.transform.position - this.transform.position).normalized), Time.deltaTime * this.homingAcquity);
+            }
             if(this.tempEnergy > 0.0f)
             {
                 return;
             }
-            this.OnEnergyDepleted();
+            StopAndDestroy();
             this.Deactivate();
         }
 
