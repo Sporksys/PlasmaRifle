@@ -412,20 +412,12 @@ namespace PlasmaRifle
             
             this.UpdateBar();      
         }
-
-        public string GetConditionTooltip()
-        {
-            reutrn "CONDITION: " + this.currentCondition + " / " + this.maxCondition + " " + (this.isCleaning ? " (Cleaning)" : "");
-        }
         
-        public string GetAmmoTooltip()
+        public void AppendTooltip(StringBuilder sb)
         {
-            return "AMMO: " + this.cartridges.GetTotalChargeCount();
-        }
-        
-        public string GetDamageTooltip()
-        {
-            return "DAMAGE: " + this.damage;
+            sb.AppendFormat("\n<size=20><color=#DDDEDEFF>{0} {1}</color></size>", "DAMAGE:", this.damage)
+            sb.AppendFormat("\n<size=20><color={0}>{1} {2} / {3} {4}</color></size>", ConditionHandler.GetConditionColor(this.currentCondition), "CONDITION:", this.currentCondition, this.maxCondition, (this.isCleaning? "(Cleaning)" : ""));
+            sb.AppendFormat("\n<size=20><color=#DDDEDEFF>{0} {1}</color></size>", "AMMO:", this.cartridges.GetTotalChargeCount());
         }
         
         public override string GetCustomUseText()
