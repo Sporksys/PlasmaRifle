@@ -4,7 +4,6 @@ namespace PlasmaRifle
 {
     class ConditionHandler
     {
-        public static readonly int MaxCondition = 100;
         public static readonly int ConditionDegradeAmount = 5;
         public static readonly float CleanRate = 20f;
 
@@ -12,7 +11,7 @@ namespace PlasmaRifle
 
         private static readonly ConditionTier[] conditionTiers = new ConditionTier[]
         {
-            new ConditionTier(100, 76, 0, "#BFFF00FF"),
+            new ConditionTier(150, 76, 0, "#BFFF00FF"),
             new ConditionTier(75, 51, 5, "#FFFF00FF"),
             new ConditionTier(50, 26, 10, "#FFBF00FF"),
             new ConditionTier(25, 1, 25, "#FF8000FF"),
@@ -26,22 +25,22 @@ namespace PlasmaRifle
             public int destroyChance;
             public string colorHexCode;
 
-            public ConditionTier(int high, int low, int destroyChance, string colorHexCode)
+            public ConditionTier(int high, int low, int jamChance, string colorHexCode)
             {
                 this.high = high;
                 this.low = low;
-                this.destroyChance = destroyChance;
+                this.jamChance = jamChance;
                 this.colorHexCode = colorHexCode;
             }
         }
 
-        public static bool IsDestroyed(int condition)
+        public static bool IsJammed(int condition)
         {
             foreach(ConditionTier tier in conditionTiers)
             {
                 if(tier.high >= condition && tier.low <= condition)
                 {
-                    return rand.Next(1, 100) <= tier.destroyChance;
+                    return rand.Next(1, 100) <= tier.jamChance;
                 }
             }
 
