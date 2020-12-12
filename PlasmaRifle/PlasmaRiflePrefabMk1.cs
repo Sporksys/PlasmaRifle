@@ -7,13 +7,13 @@ using Object = UnityEngine.Object;
 
 namespace PlasmaRifle
 {
-    class PlasmaRiflePrefab : Equipable
+    class PlasmaRiflePrefab_Mk1 : Equipable
     {
         private Atlas.Sprite itemSprite;
         private TechData techData;
         private PDAEncyclopedia.EntryData entryData;
 
-        public PlasmaRiflePrefab() : base("PlasmaRifle", "Plasma Rifle", "Uses stasis technology to deliver a playload of plasma.")
+        public PlasmaRiflePrefab() : base("PlasmaRifleMk1", "Plasma Rifle Mk1", "Uses stasis technology to deliver a playload of plasma.")
         {
 
         }
@@ -27,7 +27,7 @@ namespace PlasmaRifle
         public override float CraftingTime => 5f;
         public override QuickSlotType QuickSlotType => QuickSlotType.Selectable;
         public override string DiscoverMessage => "NotificationBlueprintUnlocked";
-        public override TechType RequiredForUnlock => TechType.Stillsuit;
+        public override TechType RequiredForUnlock => TechType.StasisRifle;
 
         protected override TechData GetBlueprintRecipe()
         {
@@ -50,6 +50,23 @@ namespace PlasmaRifle
 
             return this.techData;
         }
+        
+        public override PDAEncyclopedia.EntryData EncyclopediaEntryData => GetEntryData();
+        
+        private PDAEncyclopedia.EntryData GetEntryData()
+        {
+            if(this.entryData == null)
+            {
+                entryData = new PDAEncyclopedia.EntryData();
+                entryData.key = this.ClassId;
+                entryData.nodes = new string[] {"Tech", "Equipment" };
+                
+                Texture2D texture GetItemSprite().texture;
+                entryData.popup = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0, 0));
+            }
+            
+            return entryData;
+        }
 
         protected override Atlas.Sprite GetItemSprite()
         {
@@ -66,7 +83,8 @@ namespace PlasmaRifle
             GameObject prefab = Object.Instantiate(CraftData.GetPrefabForTechType(TechType.StasisRifle));
 
             PlasmaRifle pRifle = prefab.AddComponent<PlasmaRifle>();
-
+            pRifle.SetInitValues(100, 100, 150, 5, 1, false);
+            
             StasisRifle sRifle = prefab.GetComponent<StasisRifle>();
             pRifle.SetValuesFromOriginal(sRifle);
             pRifle.effectSpherePrefab = Object.Instantiate(sRifle.effectSpherePrefab);
