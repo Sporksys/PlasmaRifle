@@ -7,40 +7,45 @@ namespace PlasmaRifle
     [QModCore]
     public static class Main
     {
-        public static readonly string[] SlotNameArray = { "BatterySlot1", "BatterySlot2", "BatterySlot3", "BatterySlot4", "BatterySlot5" };
+        public static TechType Mk1TechType;
+        public static TechType Mk2TechType;
+        public static TechType Mk3TechType;
+        public static TechType FullCartridgeTechType;
+        public static TechType EmptyCartridgeTechType;
 
-        public static TechType techType;
-
-        internal static PlasmaRiflePrefab plasmaRifle { get; } = new PlasmaRiflePrefab();
-
+        public static string Mk1ClassId;
+        public static string Mk2ClassId;
+        public static string Mk3ClassId;
+        
+        internal static PlasmaRiflePrefab_Mk1 plasmaRifleMk1 { get; } = new PlasmaRiflePrefab_Mk1();
+        internal static PlasmaRiflePrefab_Mk2 plasmaRifleMk2 { get; } = new PlasmaRiflePrefab_Mk2();
+        internal static PlasmaRiflePrefab_Mk3 plasmaRifleMk3 { get; } = new PlasmaRiflePrefab_Mk3();
+        internal static GasCartridgeEmpty gasCartridgeEmpty { get; } = new GasCartridgeEmpty();
+        internal static GasCartridgeFull gasCartridgeFull { get; } = new GasCartridgeFull();
+        
         [QModPatch]
         public static void Patch()
         {
-            plasmaRifle.Patch();
-            Main.techType = plasmaRifle.TechType;
-
-            Equipment.slotMapping.Add(Main.SlotNameArray[0], EquipmentType.BatteryCharger);
-            Equipment.slotMapping.Add(Main.SlotNameArray[1], EquipmentType.BatteryCharger);
-            Equipment.slotMapping.Add(Main.SlotNameArray[2], EquipmentType.BatteryCharger);
-            Equipment.slotMapping.Add(Main.SlotNameArray[3], EquipmentType.BatteryCharger);
-            Equipment.slotMapping.Add(Main.SlotNameArray[4], EquipmentType.BatteryCharger);
-
-            KnownTech.onAdd += OnAdd;
-
+            plasmaRifleMk1.Patch();
+            Main.MK1TechType = plasmaRifleMk1.TechType;
+            Main.Mk1ClassId = plasmaRifleMk1.ClassID;
+            
+            plasmaRifleMk2.Patch();
+            Main.Mk2TechType = plasmaRifleMk2.TechType;
+            Main.Mk2ClassId = plasmaRifleMk2.ClassID;
+            
+            plasmaRifleMk3.Patch();
+            Main.Mk3TechType = plasmaRifleMk3.TechType;
+            Main.Mk3ClassId = plasmaRifleMk3.ClassID;
+            
+            gasCartridgeEmpty.Patch();
+            Main.EmptyCartridgeTechType = gasCartridgeEmpty.TechType;
+            
+            gasCartridgeFull.Patch();
+            Main.FullCartridgeTechType = gasCartridgeFull.TechType;
+           
             Harmony harmony = new Harmony("com.subnautica.plasmarifle.mod");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
-        }
-
-        private static void OnAdd(TechType techType, bool verbose)
-        {
-            if(Main.techType == techType)
-            {
-                Inventory.main.equipment.AddSlot(Main.SlotNameArray[0]);
-                Inventory.main.equipment.AddSlot(Main.SlotNameArray[1]);
-                Inventory.main.equipment.AddSlot(Main.SlotNameArray[2]);
-                Inventory.main.equipment.AddSlot(Main.SlotNameArray[3]);
-                Inventory.main.equipment.AddSlot(Main.SlotNameArray[4]);
-            }
-        }
+        } 
     }
 }
