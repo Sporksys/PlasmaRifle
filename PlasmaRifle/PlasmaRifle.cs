@@ -305,235 +305,145 @@ namespace PlasmaRifle
             
             return base.OnAltUp();
         }
-
-        private void LateUpdate()
+        
+        public void StartClean()
         {
-            if (this.energyMixin.HasItem())
+            if(!this.isCleaning)
             {
-                this.currentState = PlasmaRifleState.Chambered;
-
-                if (this.energyMixin.charge == 0)
-                {
-                    Pickupable pickupable = this.energyMixin.storageRoot.transform.GetChild(0).gameObject.GetComponent<Pickupable>();
-
-                    if (TechType.Lubricant == pickupable.GetTechType())
-                    {
-                        Object.DestroyImmediate(pickupable);
-                        ErrorMessage.AddMessage("Lubrication applied, cleaning rifle");
-
-                        InvokeRepeating(CleanMethod, ConditionHandler.CleanRate, ConditionHandler.CleanRate);
-                        isCleaning = true;
-                    }
-                }
-            }
-            else if (this.chargeAmount > 0.0f)
-            {
-                this.currentState = PlasmaRifleState.Charged;
-            }
-            else
-            {
-                this.currentState = PlasmaRifleState.Empty;
+                ErrorMessage.AddMessage(m_CleaningStart);
+                InvokeRepeating(CleanMethod, ConditionHandler.CleanRate, ConditionHandler.CleanRate);
+                this.isCleaning = true;
             }
         }
-
+        
         public void DoClean()
         {
-            this.condition = Math.Min(ConditionHandler.MaxCondition, (this.condition + ConditionHandler.ConditionDegradeAmount));
-
-            if (this.condition == ConditionHandler.MaxCondition)
+            this.currentCondition = Math.Min(this.maxCondition, (this.currentCondition + ConditionHandler.ConditionDegradeAmount));
+            
+            if(this.currentCondition == this.maxCondition)
             {
-                ErrorMessage.AddMessage("Plasma Rifle cleaning complete");
+                ErrorMessage.AddMessage(m_CleaningEnd);
                 CancelInvoke(CleanMethod);
                 this.isCleaning = false;
             }
         }
-
-        private bool QuickReload()
+        
+        public void StartUnjam()
         {
-            GameObject gameObject = EquipmentSlotHandler.GetFirstChargedBattery(0);
-
-            if (gameObject != null)
+            if(!this.isUnjamming)
             {
-                Pickupable pickupable = gameObject.GetComponent<Pickupable>();
-                Battery battery = gameObject.GetComponent<Battery>();
-
-                if (battery.charge > 0.0f)
-                {
-                    this.energyMixin.SetBattery(pickupable.GetTechType(), battery.charge);
-
-                    Inventory.main.equipment.RemoveItem(pickupable);
-                    return true;
-                }
-            }
-
-            return true;
-        }
-
-        private void BeginCharge()
-        {
-            if (this.isCharging)
-            {
-                return;
-            }
-            else if (!Player.main.IsSwimming())
-            {
-                ErrorMessage.AddError("It is only safe to use the Plasma Rifle while submerged");
-                return;
-            }
-            else if (this.energyMixin.charge <= 0.0f)
-            {
-                ErrorMessage.AddError(Language.main.Get("BatteryDepleted"));
-            }
-            else
-            {
-                if (this.isCleaning)
-                {
-                    ErrorMessage.AddError("Plasma Rifle cleaning interrupted");
-                    CancelInvoke(CleanMethod);
-                    isCleaning = false;
-                }
-            
-                TechType batteryType = energyMixin.GetBattery().GetComponent<TechTag>().type;
-                if (TechType.Battery == batteryType)
-                {
-                    this.energyCost = BaseEnergyCost;
-                }
-                else if (TechType.PrecursorIonBattery == batteryType)
-                {
-                    this.energyCost = IonEnergyCost;
-                }
-
-                this.isCharging = true;
-                this.fxControl.Play(0);
-                this.chargeBegin.StartEvent();
-                this.chargeLoop.StartEvent();
-                this.Animate(true);
+                Inventory.main.quickSlots.SetIgnoreHotkeyInput(true);
+                this.isUnjamming = true;
+                this.unjamSound.Play();
+                this.unjamFx.Play(0);
+                Invoke("FinishUnjam", 2f);
             }
         }
-
-        private void AbandonCharge()
+        
+        private void FinishUnjam()
         {
-            if (this.isCharging)
-            {
-                this.EndCharge();
-                this.chargeAmount = 0.0f;
-                this.UpdateBar();
-            }
+            Inventory.main.quickSlots.SetIgnoreHotkeyInput(false);
+            this.cartridges.isJammed = false;
+            this.isUnjamming = false;
+            this.unjamSound.Stop();
+            this.unjamFx.Stop(0);
         }
-
-        private void EndCharge()
-        {
-            if (!this.isCharging)
-            {
-                return;
-            }
-            else
-            {
-                SafeAnimator.SetBool(Utils.GetLocalPlayerComp().armsController.gameObject.GetComponent<Animator>(), "charged_stasisrifle", false);
-                this.isCharging = false;
-                this.fxControl.StopAndDestroy(0, 0.0f);
-                if (this.chargeBegin.GetIsStartingOrPlaying())
-                {
-                    this.chargeBegin.Stop(false);
-                }
-                if (this.chargeLoop.GetIsStartingOrPlaying())
-                {
-                    this.chargeLoop.Stop(false);
-                }
-                this.Animate(false);
-            }
-        }
-
-        private void Charge()
-        {
-            if (!this.isCharging)
-            {
-                return;
-            }
-            else
-            {
-                float amount = this.energyCost * Time.deltaTime / this.chargeDuration;
-                float charge = this.energyMixin.charge;
-                if (amount >= charge)
-                {
-                    amount = charge;
-                }
-                else if (this.chargeAmount + amount >= this.energyCost)
-                {
-                    amount = this.energyCost - this.chargeAmount;
-                }
-                this.energyMixin.ConsumeEnergy(amount);
-                this.chargeAmount += amount;
-                this.UpdateBar();
-
-                if (this.chargeAmount == this.energyCost)
-                {
-                    this.EndCharge();
-                }
-            }
-        }
-
+       
         private void Fire()
         {
-            if (this.chargeAmount <= 0.0f || this.energyMixin.charge == 0.0f)
+            float currentTime = Time.realtimeSinceStartup;
+            if(currentTime - this.lastFiredTime < FireRate)
             {
                 return;
             }
-
-            if (!Player.main.IsSwimming())
+            this.lastFiredTime = currentTime;
+            
+            GasCartridge currentCartridge = this.cartridges.GetCurrentCartridge();
+            if(currentCartridge == null)
             {
-                ErrorMessage.AddError("It is only safe to use the Plasma Rifle while submerged");
+                ErrorMessage.AddError(m_OutOfCharges);
                 return;
             }
-
+            if(this.cartridges.isJammed || this.isUnjamming)
+            {
+                ErrorMessage.AddError("Rifle is jammed!");
+                return;
+            }
+            if(this.energyMixin.charge <= 5f)
+            {   
+                ErrorMessage.AddError(Language.main.Get("BatteryDepleted"));
+                return;
+            }
+        
+            if(this.isCleaning)
+            {
+                ErrorMessage.AddError(m_CleaningInterrupted);
+                CancelInvoke(CleanMethod);
+                isCleaning = false;
+            }
+            
+            this.sphere.StopAndDestroy();
             this.fxControl.Play(1);
-            FMODUWE.PlayOneShot(this.fireSound, this.tr.position, 1f);
-
-            float maxPlasma = this.chargeAmount * ChargeToPlasmaRate;
-            float deliverablePlasma = Math.Min(this.energyMixin.charge, maxPlasma);
-            float plasmaDamage = deliverablePlasma * DamagePerPlasma;
-
-            this.sphere.ShootPlasma(this.muzzle.position, Player.main.camRoot.GetAimingTransform().rotation, plasmaDamage);
-            this.energyMixin.ConsumeEnergy(5000f);
-            this.chargeAmount = 0.0f;
-            this.UpdateBar();
-
-            Player.main.GetComponent<Rigidbody>().AddForce(-MainCamera.camera.transform.forward * 15f, ForceMode.VelocityChange);
-
-            EjectBattery();
+            FMODUWE.PlayOneShot(this.fireSound, this.transform.position, 1f);
+            
+            this.energyMixin.ConsumeEnergy(this.targetController.GetCurrentTaret() == null ? this.energyCost : (this.energyCost *2));
+            this.sphere.ShootPlasma(this.muzzle.position, Player.main.camRoot.GetAimingTransform().rotation, this.projectileSpeed, this.damage, this.targetingController.GetCurrentTarget());
+            
+            //Player.main.GetComponent<Rigidbody>().AddForce(-MainCamera.camera.transform.forward * 0f, ForceMode.VelocityChange);
+        
+            currentCartridge.charges--;
+            if(currentCartridge.charges <= 0)
+            {
+                this.cartridges.DestroyCurrentCartridge();
+                
+                if(ConditionHandler.IsJammed(this.currentCondition))
+                {
+                    this.cartridges.Jam();
+                    ErrorMessage.AddError("Rifle is jammed!");
+                }
+                else
+                {
+                    FMODUEW.PlayOneShot(this.ejectSound, this.transform.position, 1f);
+                    this.cartridges.EjectCartridge(this.transform);
+                    this.currentCondition = Math.Max(0, this.currentCondition - ConditionHandler.ConditionDegradeAmount);
+                    this.cartridges.CycleNewCartridge();
+                }
+            }
+            
+            this.UpdateBar();      
         }
 
-        private void EjectBattery()
+        public string GetConditionTooltip()
         {
-            Pickupable battery = this.energyMixin.GetBattery().GetComponent<Pickupable>();
-
-            if (ConditionHandler.IsDestroyed(this.condition))
+            reutrn "CONDITION: " + this.currentCondition + " / " + this.maxCondition + " " + (this.isCleaning ? " (Cleaning)" : "");
+        }
+        
+        public string GetAmmoTooltip()
+        {
+            return "AMMO: " + this.cartridges.GetTotalChargeCount();
+        }
+        
+        public string GetDamageTooltip()
+        {
+            return "DAMAGE: " + this.damage;
+        }
+        
+        public override string GetCustomUseText()
+        {
+            if(this.cartridges.isJammed && this.cartridges.count == 0)
             {
-                Object.DestroyImmediate(battery);
-                ErrorMessage.AddError("Rifle jammed - battery was destroyed");
+                return this.altUseTextJammed;
+            }
+            else if(this.isTargeting)
+            {
+                return this.altUseTextTargeting;
             }
             else
             {
-                this.condition = Math.Max(0, (this.condition - ConditionHandler.ConditionDegradeAmount));
-
-                battery.Drop();
-                battery.GetComponent<Rigidbody>().AddForce(MainCamera.camera.transform.right * 5f, ForceMode.VelocityChange);
-
-            }
+                return this.altUseText;
+            }            
         }
-
-        private void UpdateBar()
-        {
-            if (this.bar == null)
-            {
-                return;
-            }
-            else
-            {
-                this.bar.materials[1].SetFloat(ShaderPropertyID._Amount, this.chargeNormalized);
-            }
-        }
-
+        
         private void Animate(bool state)
         {
             if(this.animator == null || !this.animator.isActiveAndEnabled)
@@ -544,43 +454,26 @@ namespace PlasmaRifle
             SafeAnimator.SetBool(this.animator, "using_tool", state);
         }
 
-        public string GetTooltipString()
-        {
-            return "CONDITION:" + this.condition + "%" + (this.isCleaning ? " (Cleaning)" : "");
-        }
-
-        public override bool GetUsedToolThisFrame() => this.isCharging;
-
-        public override string GetCustomUseText()
-        {
-            switch(this.currentState)
-            {
-                case PlasmaRifleState.Empty: return this.quickReloadText;
-                case PlasmaRifleState.Charged: return this.dischargeText;
-                default: return null;
-            }
-        }
-
         public class SaveData
         {
             public int condition;
-            public bool isCharged;
             public bool isCleaning;
+            public List<int> cartridgeCharges;
 
             public SaveData() { }
 
-            public SaveData(int condition, bool isCharged, bool isCleaning)
+            public SaveData(int condition, bool isCleaning, Liste<int> cartridgeCharges)
             {
                 this.condition = condition;
-                this.isCharged = isCharged;
                 this.isCleaning = isCleaning;
+                this.cartridgeCharges = cartridgeCharges;
             }
         }
 
         public void OnProtoSerialize(ProtobufSerializer serializer)
         {
             string fileName = GetFileName();
-            SaveData saveData = new SaveData(this.condition, (this.chargeAmount >= BaseEnergyCost), this.isCleaning);
+            SaveData saveData = new SaveData(this.condition, this.isCleaning, this.cartridges.GetChargesToSerialize());
 
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(SaveData));
             using(StringWriter stringWriter = new StringWriter())
@@ -602,14 +495,15 @@ namespace PlasmaRifle
             {
                 SaveData saveData = (SaveData)xmlSerializer.Deserialize(stringReader);
                 this.condition = saveData.condition;
-                if(saveData.isCharged)
-                {
-                    this.chargeAmount = this.energyCost;
-                }
                 if(saveData.isCleaning)
                 {
                     InvokeRepeating(CleanMethod, ConditionHandler.CleanRate, ConditionHandler.CleanRate);
                     this.isCleaning = true;
+                }
+                if(saveData.cartridgeCharges != null)
+                {
+                    this.InitCaridgeContainer();
+                    this.cartridges.InitAfterDeserialize(saveData.cartridgeCharges);
                 }
             }
         }
