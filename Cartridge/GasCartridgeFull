@@ -11,14 +11,14 @@ namespace PlasmaRifle
         private TechData techData;
         private Atlas.Sprite itemSprite;
         
-        public GasCartridgeEmpty() : base("GasCartridge", "Gas Cartridge", "A cylinder full of gas.")
+        public GasCartridgeFull() : base("GasCartridge", "Gas Cartridge", "A cylinder full of gas.")
         {
         
         }
         
         public override Vector2int SizeInInventory => new Vector2int(1, 1);
         
-        public overrride CraftTree.Type FabricatorType = CraftTree.Type.Fabricator;
+        public overrride CraftTree.Type FabricatorType => CraftTree.Type.Fabricator;
         
         public override string[] StepsToFabricatorTab => new string[] { "Resources", "AdvancedMaterials" };
         
