@@ -3,6 +3,8 @@ using Object = UnityEngine.Object;
 
 namespace PlasmaRifle
 {
+    public delegate void EnemyKilledDelegate();
+    
     class PlasmaSphere : MonoBehaviour
     {
         private readonly float ShellRadius = 0.5f;
@@ -91,7 +93,7 @@ namespace PlasmaRifle
             this.active = true;
             this.tempEnergy = Energy;
             this.visible = false;
-            this.tempSpeed = Speed;
+            this.tempSpeed = speed;
             this.path = 0.0f;
             this.gameObject.SetActive(true);
         }
@@ -118,7 +120,7 @@ namespace PlasmaRifle
                     {
                         liveMixin.TakeDamage(this.damage, default, DamageType.Undefined);
                         
-                        if(!lifeMixin.IsAlive())
+                        if(!liveMixin.IsAlive())
                         {
                             OnEnemyKilled();
                         }
@@ -169,7 +171,7 @@ namespace PlasmaRifle
             this.transform.position += this.transform.forward * maxDistance;
             if(this.homingTarget != null)
             {
-                this.transform.rotation = Quarternion.Slerp(this.transform.rotation, Quarternion.LookRotation((this.homingTarget.transform.position - this.transform.position).normalized), Time.deltaTime * this.homingAcquity);
+                this.transform.rotation = Quaternion.Slerp(this.transform.rotation, Quaternion.LookRotation((this.homingTarget.transform.position - this.transform.position).normalized), Time.deltaTime * this.homingAcquity);
             }
             if(this.tempEnergy > 0.0f)
             {
