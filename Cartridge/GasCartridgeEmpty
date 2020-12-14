@@ -6,12 +6,12 @@ using Object = UnityEngine.Object;
 
 namespace PlasmaRifle
 {
-    class GasCartridgeFull : Craftable
+    class GasCartridgeEmpty : Craftable
     {
         private TechData techData;
         private Atlas.Sprite itemSprite;
         
-        public GasCartridgeFull() : base("EmptyGasCartridge", "Empty Gas Cartridge", "A cylinder meant to hold gas.")
+        public GasCartridgeEmpty() : base("EmptyGasCartridge", "Empty Gas Cartridge", "A cylinder meant to hold gas.")
         {
         
         }
