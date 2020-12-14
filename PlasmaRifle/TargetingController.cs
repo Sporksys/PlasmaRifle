@@ -118,6 +118,8 @@ namespace PlasmaRifle
             LinkedListNode<Target> first = GetFirstNode();
             if(first != null)
             {
+                first.Value.SetActiveTarget(false);
+                
                 this.targetList.RemoveFirst();
                 this.targetList.AddLast(first);
                 
