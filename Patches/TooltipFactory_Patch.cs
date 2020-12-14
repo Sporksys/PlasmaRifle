@@ -10,7 +10,7 @@ namespace PlasmaRifle
         [HarmonyPrefix]
         private static bool Prefix(StringBuilder sb, TechType techType, GameObject obj)
         {
-            if(techType == Main.Main.Mk1TechType || techType == Main.Mk2TechType || techType == Main.Mk3TechType || techType == Main.FullCartridgeTechType)
+            if(techType == Main.Mk1TechType || techType == Main.Mk2TechType || techType == Main.Mk3TechType || techType == Main.FullCartridgeTechType)
             {
                 string title = Language.main.Get(techType);
                 sb.AppendFormat("<size=25><color=#ffffffff>{0}</color></size>", title);
