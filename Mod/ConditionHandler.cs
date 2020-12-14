@@ -22,7 +22,7 @@ namespace PlasmaRifle
         {
             public int high;
             public int low;
-            public int destroyChance;
+            public int jamChance;
             public string colorHexCode;
 
             public ConditionTier(int high, int low, int jamChance, string colorHexCode)
