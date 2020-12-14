@@ -18,7 +18,7 @@ namespace PlasmaRifle
         
         public override Vector2int SizeInInventory => new Vector2int(1, 1);
         
-        public overrride CraftTree.Type FabricatorType => CraftTree.Type.Fabricator;
+        public override CraftTree.Type FabricatorType => CraftTree.Type.Fabricator;
         
         public override string[] StepsToFabricatorTab => new string[] { "Resources", "AdvancedMaterials" };
         
