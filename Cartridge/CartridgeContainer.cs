@@ -1,4 +1,4 @@
-using System.Collection.Generic;
+using System.Collections.Generic;
 using Object = UnityEngine.Object;
 using UnityEngine;
 
@@ -18,7 +18,7 @@ namespace PlasmaRifle
         {
             PDA pda = Player.main.GetPDA();
             Inventory.main.SetUsedStorage(this);
-            reutrn pda.Open(PDATab.Inventory, this.tr, null);
+            return pda.Open(PDATab.Inventory, this.tr, null);
         }
         
         public void Jam()
@@ -32,8 +32,8 @@ namespace PlasmaRifle
             GameObject emptyCartridge = CraftData.InstantiateFromPrefab(Main.EmptyCartridgeTechType);
             if(emptyCartridge != null)
             {
-                emptyCartridge.transform.position = transform.position;
-                emptyCartridge.GetComponent<Rigidbody>.AddForce(((ejectFrom.right + ejectFrom.forward) * 5f + (ejectFrom.up * 2f)), ForceMode.VelocityChange);
+                emptyCartridge.transform.position = ejectFrom.position;
+                emptyCartridge.GetComponent<Rigidbody>().AddForce(((ejectFrom.right + ejectFrom.forward) * 5f + (ejectFrom.up * 2f)), ForceMode.VelocityChange);
                 emptyCartridge.GetComponent<GasCartridge>().StartDecay();
             }
         }
@@ -90,7 +90,7 @@ namespace PlasmaRifle
         
         public List<int> GetChargesToSerialize()
         {
-            List<int> chartridgeChargeList = new List<int>();
+            List<int> cartridgeChargeList = new List<int>();
             IList<InventoryItem> itemList = this.GetItems(Main.FullCartridgeTechType);
             if(itemList != null)
             {
@@ -111,7 +111,7 @@ namespace PlasmaRifle
                 foreach(int cartridgeCharge in cartridgeCharges)
                 {
                     GameObject cartridge = CraftData.InstantiateFromPrefab(Main.FullCartridgeTechType);
-                    cartridge.setActive(false);
+                    cartridge.SetActive(false);
                     cartridge.GetComponent<GasCartridge>().charges = cartridgeCharge;
                     this.AddItem(cartridge.GetComponent<Pickupable>());
                 }
