@@ -7,13 +7,13 @@ using Object = UnityEngine.Object;
 
 namespace PlasmaRifle
 {
-    class PlasmaRiflePrefab_Mk2 : Equipable
+    class PlasmaRiflePrefab_Mk3 : Equipable
     {
         private Atlas.Sprite itemSprite;
         private TechData techData;
         private PDAEncyclopedia.EntryData entryData;
 
-        public PlasmaRiflePrefab() : base("PlasmaRifleMk3", "Plasma Rifle Mk3", "Uses stasis technology to deliver a playload of plasma.")
+        public PlasmaRiflePrefab_Mk3() : base("PlasmaRifleMk3", "Plasma Rifle Mk3", "Uses stasis technology to deliver a playload of plasma.")
         {
 
         }
@@ -53,10 +53,10 @@ namespace PlasmaRifle
             if(this.entryData == null)
             {
                 entryData = new PDAEncyclopedia.EntryData();
-                entryData.key = this.ClassId;
+                entryData.key = this.ClassID;
                 entryData.nodes = new string[] {"Tech", "Equipment" };
                 
-                Texture2D texture GetItemSprite().texture;
+                Texture2D texture = GetItemSprite().texture;
                 entryData.popup = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0, 0));
             }
             
