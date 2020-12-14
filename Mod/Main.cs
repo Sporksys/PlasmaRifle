@@ -27,7 +27,7 @@ namespace PlasmaRifle
         public static void Patch()
         {
             plasmaRifleMk1.Patch();
-            Main.MK1TechType = plasmaRifleMk1.TechType;
+            Main.Mk1TechType = plasmaRifleMk1.TechType;
             Main.Mk1ClassId = plasmaRifleMk1.ClassID;
             
             plasmaRifleMk2.Patch();
