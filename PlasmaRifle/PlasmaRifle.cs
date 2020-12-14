@@ -140,6 +140,10 @@ namespace PlasmaRifle
             FireExtinguisher prefab = CraftData.GetPrefabForTechType(TechType.FireExtinguisher).GetComponent<FireExtinguisher>();
             this.unjamSound = prefab.soundEmitter;
 
+            this.unjamFx = Object.Instantiate(prefab.fxControl, this.transform);
+            this.unjamFx.transform.localPosition = new Vector3(0.1f, 0.0f, 0.1f);
+            this.unjamFx.transform.localEulerAngles = new Vector3(0.0f, 55.0f, 147.4f);
+
             if (this.fxControl != null)
             {
                 ParticleSystem particleSystem = this.fxControl.emitters[1].fx.GetComponent<ParticleSystem>();
