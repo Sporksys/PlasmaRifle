@@ -5,6 +5,7 @@ using System.IO;
 using System.Xml.Serialization;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using System.Text;
 
 namespace PlasmaRifle
 {
@@ -19,15 +20,13 @@ namespace PlasmaRifle
         private static readonly float FireRate = 1f;
         
         public static readonly string m_CleaningStart = "Librication applied, cleaning rifle";
-        public static readonly string m_CleaningiEnd = "Plasma Rifle cleaning complete";
+        public static readonly string m_CleaningEnd = "Plasma Rifle cleaning complete";
         public static readonly string m_CleaningInterrupted = "Plasma Rifle cleaning interrupted";
         public static readonly string m_OutOfCharges = "Out of charges";
         public static readonly string t_OpenCartridges = "Cartridges(<color=#ADF8FFFF>{0}</color>)";
         public static readonly string t_Unjam = "Clear Jam (<color=#ADF8FFFF>{0}</color>)";
-        public static readonly string t_nexTarget = "Next Target (<color=#ADF8FFFF>{0}</color>)";
-
-        private static readonly string CleanMethod = "DoClean";
-
+        public static readonly string t_nextTarget = "Next Target (<color=#ADF8FFFF>{0}</color>)";
+        
         [AssertNotNull]
         public GameObject effectSpherePrefab;
         [AssertNotNull]
@@ -37,7 +36,7 @@ namespace PlasmaRifle
         [AssertNotNull]
         public VFXController fxControl;
         
-        private CartridgeContaineir cartridges;
+        private CartridgeContainer cartridges;
 
         public Animator animator;
         public Transform muzzle;
@@ -66,7 +65,7 @@ namespace PlasmaRifle
         public FMOD_CustomLoopingEmitter targetingSound;
         public FMOD_CustomEmitter sonarSound;
         
-        private float rotateSpeed = 0.0f
+        private float rotateSpeed = 0.0f;
         private int rpmIndex;
         
         private readonly TargetingController targetController = new TargetingController();
@@ -129,7 +128,7 @@ namespace PlasmaRifle
             
             this.fireSound = CraftData.GetPrefabForTechType(TechType.RepulsionCannon).GetComponent<RepulsionCannon>().shootSound;
             this.ejectSound = CraftData.GetPrefabForTechType(TechType.PropulsionCannon).GetComponent<PropulsionCannon>().shootSound;
-            this.sonarSound = CraftData.GetPrefabForTechType(TechType.Seamoth).GetComponent<Seamoth>().sonarSound;
+            this.sonarSound = CraftData.GetPrefabForTechType(TechType.Seamoth).GetComponent<SeaMoth>().sonarSound;
             
             EngineRpmSFXManager engineSFXManager = CraftData.GetPrefabForTechType(TechType.Seaglide).GetComponent<Seaglide>().engineRPMManager;
             if(engineSFXManager != null)
@@ -153,7 +152,7 @@ namespace PlasmaRifle
             
             if (this.sphere == null && this.effectSpherePrefab != null)
             {
-                this.sphere = Object.Instantiate<GameObject>(this.effectSpherePrefab, this.tr.position, Quaternion.identity).GetComponent<PlasmaSphere>();
+                this.sphere = Object.Instantiate<GameObject>(this.effectSpherePrefab, this.transform.position, Quaternion.identity).GetComponent<PlasmaSphere>();
                 if(this.canTarget)
                 {
                     this.sphere.EnemyKilledEvent += OnEnemyKilled;
@@ -165,7 +164,7 @@ namespace PlasmaRifle
         
         public void OnEnemyKilled()
         {
-            this.targetControlled.CheckForDeadTargets();
+            this.targetController.CheckForDeadTargets();
         }
 
         private void OnAddItem(InventoryItem item) => UpdateBar();
@@ -261,7 +260,7 @@ namespace PlasmaRifle
                     
                     this.sonarSound.Play();
                     SNCameraRoot.main.SonarPing();
-                    Invoke(TargetingMethod), 2f);
+                    Invoke(TargetingMethod, 2f);
                     
                     this.energyMixin.ConsumeEnergy(this.energyCost);
                 }
@@ -269,8 +268,8 @@ namespace PlasmaRifle
                 {
                     this.isTargeting = false;
                     this.Animate(false);
-                    this.targetingSOund.SetParameterValue(this.rpmIndex, 0.0f);
-                    this.targetingController.ReleaseTargets();
+                    this.targetingSound.SetParameterValue(this.rpmIndex, 0.0f);
+                    this.targetController.ReleaseTargets();
                 }
             }
             
@@ -285,7 +284,7 @@ namespace PlasmaRifle
         public override bool OnRightHandDown()
         {
             this.Fire();
-            return this.isCharging;
+            return base.OnRightHandDown();
         }
 
         public override bool OnAltUp()
@@ -386,8 +385,8 @@ namespace PlasmaRifle
             this.fxControl.Play(1);
             FMODUWE.PlayOneShot(this.fireSound, this.transform.position, 1f);
             
-            this.energyMixin.ConsumeEnergy(this.targetController.GetCurrentTaret() == null ? this.energyCost : (this.energyCost *2));
-            this.sphere.ShootPlasma(this.muzzle.position, Player.main.camRoot.GetAimingTransform().rotation, this.projectileSpeed, this.damage, this.targetingController.GetCurrentTarget());
+            this.energyMixin.ConsumeEnergy(this.targetController.GetCurrentTarget() == null ? this.energyCost : (this.energyCost *2));
+            this.sphere.ShootPlasma(this.muzzle.position, Player.main.camRoot.GetAimingTransform().rotation, this.projectileSpeed, this.damage, this.targetController.GetCurrentTarget());
             
             //Player.main.GetComponent<Rigidbody>().AddForce(-MainCamera.camera.transform.forward * 0f, ForceMode.VelocityChange);
         
@@ -403,7 +402,7 @@ namespace PlasmaRifle
                 }
                 else
                 {
-                    FMODUEW.PlayOneShot(this.ejectSound, this.transform.position, 1f);
+                    FMODUWE.PlayOneShot(this.ejectSound, this.transform.position, 1f);
                     this.cartridges.EjectCartridge(this.transform);
                     this.currentCondition = Math.Max(0, this.currentCondition - ConditionHandler.ConditionDegradeAmount);
                     this.cartridges.CycleNewCartridge();
@@ -415,7 +414,7 @@ namespace PlasmaRifle
         
         public void AppendTooltip(StringBuilder sb)
         {
-            sb.AppendFormat("\n<size=20><color=#DDDEDEFF>{0} {1}</color></size>", "DAMAGE:", this.damage)
+            sb.AppendFormat("\n<size=20><color=#DDDEDEFF>{0} {1}</color></size>", "DAMAGE:", this.damage);
             sb.AppendFormat("\n<size=20><color={0}>{1} {2} / {3} {4}</color></size>", ConditionHandler.GetConditionColor(this.currentCondition), "CONDITION:", this.currentCondition, this.maxCondition, (this.isCleaning? "(Cleaning)" : ""));
             sb.AppendFormat("\n<size=20><color=#DDDEDEFF>{0} {1}</color></size>", "AMMO:", this.cartridges.GetTotalChargeCount());
         }
@@ -454,7 +453,7 @@ namespace PlasmaRifle
 
             public SaveData() { }
 
-            public SaveData(int condition, bool isCleaning, Liste<int> cartridgeCharges)
+            public SaveData(int condition, bool isCleaning, List<int> cartridgeCharges)
             {
                 this.condition = condition;
                 this.isCleaning = isCleaning;
@@ -465,7 +464,7 @@ namespace PlasmaRifle
         public void OnProtoSerialize(ProtobufSerializer serializer)
         {
             string fileName = GetFileName();
-            SaveData saveData = new SaveData(this.condition, this.isCleaning, this.cartridges.GetChargesToSerialize());
+            SaveData saveData = new SaveData(this.currentCondition, this.isCleaning, this.cartridges.GetChargesToSerialize());
 
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(SaveData));
             using(StringWriter stringWriter = new StringWriter())
@@ -486,7 +485,7 @@ namespace PlasmaRifle
             using(StringReader stringReader = new StringReader(fileText))
             {
                 SaveData saveData = (SaveData)xmlSerializer.Deserialize(stringReader);
-                this.condition = saveData.condition;
+                this.currentCondition = saveData.condition;
                 if(saveData.isCleaning)
                 {
                     InvokeRepeating(CleanMethod, ConditionHandler.CleanRate, ConditionHandler.CleanRate);
@@ -494,7 +493,7 @@ namespace PlasmaRifle
                 }
                 if(saveData.cartridgeCharges != null)
                 {
-                    this.InitCaridgeContainer();
+                    this.InitCartridgeContainer();
                     this.cartridges.InitAfterDeserialize(saveData.cartridgeCharges);
                 }
             }
