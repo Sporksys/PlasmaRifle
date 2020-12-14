@@ -36,7 +36,7 @@ namespace PlasmaRifle
                     Ingredients = new List<Ingredient>()
                     {
                         new Ingredient(TechType.Titanium, 1),
-                        new Ingredient(TechType.Glass, 1
+                        new Ingredient(TechType.Glass, 1)
                     }
                 };
             }
